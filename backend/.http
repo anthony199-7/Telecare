@@ -1,0 +1,123 @@
+POST http://localhost:4000/api/admin/login HTTP/1.1
+Content-Type: application/json
+
+{
+  "email": "okeke75@gmail.com",
+  "password": "Okeke123."
+}
+
+###
+@token = eyJhbGciOiJIUzI1NiJ9.b2tla2U3NUBnbWFpbC5jb21Pa2VrZTEyMy4.1HoEBKl-9o0p8O2oaZdixoeT5PAmDrMubususFEMkOM
+###
+###
+POST http://localhost:4000/api/admin/add-doctor HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; name="name"
+
+Dr. Amelia Hill
+--MyBoundary
+Content-Disposition: form-data; name="email"
+
+amelia@demo.com
+--MyBoundary
+Content-Disposition: form-data; name="password"
+
+123456789
+--MyBoundary
+Content-Disposition: form-data; name="speciality"
+
+Cardiology
+--MyBoundary
+Content-Disposition: form-data; name="degree"
+
+MBBS
+--MyBoundary
+Content-Disposition: form-data; name="experience"
+
+5
+--MyBoundary
+Content-Disposition: form-data; name="about"
+
+This is a description about Dr. Amelia.
+--MyBoundary
+Content-Disposition: form-data; name="fees"
+
+150
+--MyBoundary
+Content-Disposition: form-data; name="address"
+
+{"line1": "123 Kingston Road", "line2": "London, UK"}
+--MyBoundary
+Content-Disposition: form-data; name="image"; filename="doc6.png"
+Content-Type: image/png
+
+< ./test_files/doc6.png  
+--MyBoundary--
+
+
+### GET All Doctors
+GET http://localhost:4000/api/admin/all-doctors HTTP/1.1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+
+
+### Test Change Availability (Success Case)
+@token = eyJhbGciOiJIUzI1NiJ9.b2tla2U3NUBnbWFpbC5jb21Pa2VrZTEyMy4.1HoEBKl-9o0p8O2oaZdixoeT5PAmDrMubususFEMkOM
+POST   http://localhost:4000/api/admin/change-Availability
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "docId": "6921e8b697eabdcdf24c6ff8",
+  "available": true 
+}
+### Test Change Availability (Failure
+GET http://localhost:4000/api/doctors/list HTTP/1.1
+Content-Type: application/json
+
+
+
+### register user
+POST http://localhost:4000/api/users/register HTTP/1.1  
+Content-Type: application/json
+
+{
+  "name": "chikezle1234",
+  "email": "chikezle1234@telecare.com",
+  "password": "okeke123453!"
+  }
+### login user
+POST http://localhost:4000/api/users/login HTTP/1.1
+Content-Type: application/json
+
+{
+"email": "chikezle1234@telecare.com",
+"password":  "okeke123453!"                                                      
+}
+
+
+
+### get profile
+
+
+GET http://localhost:4000/api/users/get-profile HTTP/1.1
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjZlYWZmOWI2NWIxZDcxMWY2ODQ2ZSIsImlhdCI6MTc2NDE1ODI0NH0.SdgSQW12Qz9-2FVZuO2FiadQh-AJ-TsJmkEvYWHnWN4
+
+
+#### update profile
+PATCH   http://localhost:4000/api/users/update-Profile HTTP/1.1
+Content-Type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5MjZlYWZmOWI2NWIxZDcxMWY2ODQ2ZSIsImlhdCI6MTc2NDE1ODI0NH0.SdgSQW12Qz9-2FVZuO2FiadQh-AJ-TsJmkEvYWHnWN4
+
+{
+  "name": "chikezle1234",
+  "phone": "09040212863",
+  "dob": "2025-11-26",
+  "gender": "male",
+  "address": "{\n  \"line1\":\"Main screen\"\n  \"line2\":\"2nd road\"\n}"
+ 
+}
