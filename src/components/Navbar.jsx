@@ -6,12 +6,19 @@ import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 const Navbar = () => {
   const navigate = useNavigate();
-  const { token, setToken, profileImage } = useContext(AppContext);
+  const { token, setToken, profileImage, doctorToken, setDoctorToken } =
+    useContext(AppContext);
   const [showMenu, setShowMenu] = useState(false);
-  const logOut = () =>{
-    setToken(false)
-    localStorage.removeItem('token')
-  }
+  const logOut = () => {
+    setToken(false);
+    localStorage.removeItem("token");
+  };
+
+  const logOutDoctor = () => {
+    setDoctorToken(false);
+    localStorage.removeItem("doctorToken");
+  };
+
   return (
     <div className="flex items-center justify-between lg:text-4xl text-blue py-1 mb-5 border-b border-b-white-400 bg-white-800 md:text-2xl ">
       <img
@@ -43,7 +50,7 @@ const Navbar = () => {
         </NavLink>
       </ul>
       <div className="flex items-center gap-4">
-        { token ? (
+        {token ?
           <div className="flex item-center gap-2 cursor-pointer group relative">
             <img className="w-8 rounded-full" src={profileImage} alt="" />
             <img className="w2.5" src={assets.dropdown_icon} alt="" />
@@ -59,21 +66,30 @@ const Navbar = () => {
                   className="hover:text-black cursor-pointer">
                   My appointment
                 </p>
-                <p
-                  onClick={logOut}
-                  className="hover:text-black cursor-pointer">
+                <p onClick={logOut} className="hover:text-black cursor-pointer">
                   Logout
                 </p>
               </div>
             </div>
           </div>
-        ) : (
-          <button
+        : <button
             onClick={() => navigate("/login")}
             className="bg-blue-500 hover:bg-blue-700 text-white font-light hidden md:block py-3 px-8 rounded-full">
             Create account
           </button>
-        )}
+        }
+        {doctorToken ?
+          <button
+            onClick={() => navigate("/doctor/dashboard")}
+            className="bg-green-500 hover:bg-green-700 text-white font-light hidden md:block py-3 px-8 rounded-full">
+            Doctor portal
+          </button>
+        : <button
+            onClick={() => navigate("/doctor/login")}
+            className="bg-gray-500 hover:bg-gray-700 text-white font-light hidden md:block py-3 px-8 rounded-full">
+            Doctor login
+          </button>
+        }
 
         <img
           onClick={() => setShowMenu(true)}
@@ -107,6 +123,9 @@ const Navbar = () => {
             </NavLink>
             <NavLink onClick={() => setShowMenu(false)} to="/contact">
               <p className="px-4 py-2 rounded inline-block">CONTACT</p>
+            </NavLink>
+            <NavLink onClick={() => setShowMenu(false)} to="/doctor/login">
+              <p className="px-4 py-2 rounded inline-block">DOCTOR LOGIN</p>
             </NavLink>
           </ul>
         </div>

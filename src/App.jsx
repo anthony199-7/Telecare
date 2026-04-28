@@ -10,14 +10,16 @@ import Contact from "./pages/Contact";
 import MyProfile from "./pages/MyProfile";
 import MyAppointment from "./pages/MyAppointment";
 import Appointment from "./pages/Appointment";
+import DoctorLogin from "./pages/DoctorLogin";
+import DoctorDashboard from "./pages/DoctorDashboard";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
-import { ToastContainer, toast } from 'react-toastify';
+import { ToastContainer, toast } from "react-toastify";
 
 const App = () => {
   return (
     <div className="mx4 sm:mx[10%]">
-      <ToastContainer/>
+      <ToastContainer />
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -28,7 +30,9 @@ const App = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/my-profile" element={<MyProfile />} />
         <Route path="/my-appointments" element={<MyAppointment />} />
-        <Route path="/appointment/:doc_Id" element={<Appointment />} />
+        <Route path="/appointment/:docId" element={<Appointment />} />
+        <Route path="/doctor/login" element={<DoctorLogin />} />
+        <Route path="/doctor/dashboard" element={<DoctorDashboard />} />
       </Routes>
       <Footer />
     </div>

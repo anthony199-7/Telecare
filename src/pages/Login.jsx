@@ -5,133 +5,133 @@ import { assets } from "../assets/assets";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
-import {useNavigate} from 'react-router-dom'
-const Login = () => {
-  const { backendUrl, token, setToken } = useContext(AppContext);
-  const navigate =useNavigate()
-  const [state, setState] = useState("sign up");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+import { useNavigate } from "react-router-dom";
 
- const onSubmitHandler = async (event) => {
-    event.preventDefault();
+const Login = () => {
+  const { backendUrl, token, setToken } = useContext(AppContext); // [3]
+  const navigate = useNavigate(); // [4]
+
+  const [state, setState] = useState("Sign Up"); // [1]
+
+  const [email, setEmail] = useState(""); // [1]
+  const [password, setPassword] = useState(""); // [1]
+  const [name, setName] = useState(""); // [5]
+
+  const onSubmitHandler = async (event) => {
+    event.preventDefault(); // [5]
 
     try {
-        let res; // Use 'res' for the Axios response object
-
-        if (state === "Sign Up") {
-            const data = { name, password, email };
-            
-            // 1.  Assign the result to 'res'
-            res = await axios.post(backendUrl + "/api/users/register", data);
-
-        } else { // state === "Login"
-            const data = { email, password };
-
-            // 1. CRITICAL FIX: Assign the result to 'res'
-            res = await axios.post(backendUrl + "/api/users/login", data);
-        }
-        
-        // 2. CRITICAL FIX: Check res.data.success and use res.data.token
-        if (res.data.success) {
-            // Success logic
-            localStorage.setItem("token", res.data.token);
-            setToken(res.data.token);
+      if (state === "Sign Up") {
+        // API call to register user [2]
+        const { data } = await axios.post(backendUrl + "/api/user/register", {
+          name,
+          password,
+          email,
+        });
+        if (data.success) {
+          localStorage.setItem("token", data.token); // [2]
+          setToken(data.token); // [6]
         } else {
-            // Failure logic (Backend sent a success: false response)
-            // Use res.data.message for the message sent from your backend controller
-            toast.error(res.data.message);
+          toast.error(data.message); // [6]
         }
-
+      } else {
+        // API call to login user [6]
+        const { data } = await axios.post(backendUrl + "/api/user/login", {
+          password,
+          email,
+        });
+        if (data.success) {
+          localStorage.setItem("token", data.token); // [2]
+          setToken(data.token); // [6]
+        } else {
+          toast.error(data.message); // [6]
+        }
+      }
     } catch (error) {
-        // 3. CRITICAL FIX: Handle network errors and get the message correctly
-        const errorMessage = error.response
-            ? error.response.data.message // Message from your backend (e.g., status 400)
-            : error.message;             // General network/Axios error (e.g., server offline)
-            
-        toast.error(errorMessage);
+      toast.error(error.message); // [7]
     }
-};
-  useEffect(()=>{
-    if (token){
-      navigate('/')
+  };
+
+  // Redirect to home if user is already logged in [4]
+  useEffect(() => {
+    if (token) {
+      navigate("/");
     }
-  },[token])
+  }, [token]);
 
-
-
- return (
+  return (
     <form onSubmit={onSubmitHandler} className="min-h-[80vh] flex items-center">
-      <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm:shadow-lg">
-        <div className="w-4 flex flex-col  m-auto p- min-w-[340px] sm:min-w-96 bg-blue-800 ">
-          <img src={assets.telecare_login} alt="" />
-        </div>
-
+      <div className="flex flex-col gap-3 m-auto items-start p-8 min-w-[340px] sm:min-w-96 border rounded-xl text-zinc-600 text-sm shadow-lg">
         <p className="text-2xl font-semibold">
           {state === "Sign Up" ? "Create Account" : "Login"}
-        </p>
+        </p>{" "}
+        {/* [8] */}
         <p>
-          Please {state === "Sign Up" ? "Sign Up" : "login"} to book appointment
-        </p>
-
+          Please {state === "Sign Up" ? "sign up" : "log in"} to book
+          appointment
+        </p>{" "}
+        {/* [9] */}
+        {/* Only show Name field during Sign Up [10, 11] */}
         {state === "Sign Up" && (
-          <div className="w-full">
-            <p>full Name</p>
+          <div className="w-full ">
+            <p>Full Name</p>
             <input
-              className="border border-zinc-300 rounded w-full p-2 nt-1"
+              className="border border-zinc-300 rounded w-full p-2 mt-1"
               type="text"
               onChange={(e) => setName(e.target.value)}
               value={name}
               required
-            />
+            />{" "}
+            {/* [9, 12] */}
           </div>
         )}
-
-        <div className="w-full">
+        <div className="w-full ">
           <p>Email</p>
           <input
-            className="border border-zinc-300 rounded w-full p-2 nt-1"
+            className="border border-zinc-300 rounded w-full p-2 mt-1"
             type="email"
             onChange={(e) => setEmail(e.target.value)}
             value={email}
             required
-          />
+          />{" "}
+          {/* [9, 12] */}
         </div>
-        <div className="w-full">
+        <div className="w-full ">
           <p>Password</p>
           <input
-            className="border border-zinc-300 rounded w-full p-2 nt-1"
+            className="border border-zinc-300 rounded w-full p-2 mt-1"
             type="password"
             onChange={(e) => setPassword(e.target.value)}
             value={password}
             required
-          />
+          />{" "}
+          {/* [12, 13] */}
         </div>
         <button
           type="submit"
-          className="bg-blue-900 text-white w-full py-2 rounded-md text-base">
-          {state === "Sign Up" ? "Create Account" : "login"}
-        </button>
-        {state === "Sign Up" ? (
+          className="bg-primary text-white w-full py-2 rounded-md text-base">
+          {state === "Sign Up" ? "Create Account" : "Login"}
+        </button>{" "}
+        {/* [13, 14] */}
+        {/* Toggle between Login and Sign Up states [10, 15] */}
+        {state === "Sign Up" ?
           <p>
-            Already have an account ?
+            Already have an account?{" "}
             <span
-              onClick={() => setState("login")}
-              className="text-blue-300 underline cursor-pointer">
+              onClick={() => setState("Login")}
+              className="text-primary underline cursor-pointer">
               Login here
-            </span>
+            </span>{" "}
           </p>
-        ) : (
-          <p>
-            Create a new account?
+        : <p>
+            Create a new account?{" "}
             <span
               onClick={() => setState("Sign Up")}
-              className="text-blue-300 underline cursor-pointer">
+              className="text-primary underline cursor-pointer">
               click here
             </span>{" "}
           </p>
-        )}
+        }
       </div>
     </form>
   );
