@@ -303,7 +303,7 @@ const Appointment = () => {
           <button
             onClick={payForAppointment}
             disabled={paymentLoading}
-            className="bg-primary text-white text-sm font-light px-14 py-3 rounded-full my-6 disabled:opacity-60 disabled:cursor-not-allowed">
+            className="bg-blue-600 text-white text-sm font-light px-14 py-3 rounded-full my-6 disabled:opacity-60 disabled:cursor-not-allowed">
             {paymentLoading ?
               "Processing payment..."
             : "Pay & Book appointment"}

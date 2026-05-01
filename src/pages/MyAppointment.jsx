@@ -1,9 +1,105 @@
 /** @format */
 
-import React, { useContext, useEffect, useState } from "react";
+import React, {
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
+
+// --- Sub-components ---
+
+const EmptyState = () => (
+  <section className="text-center py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+    <p className="text-2xl font-light text-zinc-500">No Appointments Found</p>
+    <p className="text-sm mt-2 text-zinc-400">
+      It looks like you haven't booked any appointments yet.
+    </p>
+  </section>
+);
+
+const AppointmentCard = ({ item, onCancel, onPay, isLoading }) => {
+  const { docData, slotDate, slotTime, cancelled, payment, _id } = item;
+
+  return (
+    <article
+      className="flex flex-col sm:grid sm:grid-cols-[120px_1fr_180px] gap-4 p-4 border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition-all bg-white"
+      aria-labelledby={`doctor-name-${_id}`}>
+      {/* Doctor Image */}
+      <div className="flex justify-center sm:block">
+        <img
+          className="w-32 h-32 sm:w-full sm:h-28 object-cover rounded-lg bg-indigo-50"
+          src={
+            docData.image ||
+            "https://placehold.co/120x120/eef2ff/4338ca?text=Dr"
+          }
+          alt={`Dr. ${docData.name}`}
+        />
+      </div>
+
+      {/* Appointment Details */}
+      <div className="text-sm text-zinc-600 space-y-1">
+        <h3
+          id={`doctor-name-${_id}`}
+          className="text-lg text-indigo-700 font-bold">
+          {docData.name}
+        </h3>
+        <p className="text-sm font-medium text-gray-700">
+          {docData.speciality}
+        </p>
+        <div className="text-xs text-gray-500 mt-2">
+          <p className="font-semibold text-gray-700 uppercase tracking-wider text-[10px]">
+            Address
+          </p>
+          <p>{docData.address.line1}</p>
+          <p>{docData.address.line2}</p>
+        </div>
+        <p className="text-sm mt-3 inline-block px-2 py-1 bg-indigo-50 rounded text-indigo-700">
+          <span className="font-bold">Date:</span> {slotDate} | {slotTime}
+        </p>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col gap-2 justify-center border-t sm:border-t-0 pt-4 sm:pt-0">
+        {cancelled ?
+          <button
+            disabled
+            className="w-full py-2 border border-red-600 rounded-lg text-red-400 bg-red-50 font-medium cursor-not-allowed">
+            Cancelled
+          </button>
+        : <>
+            {payment ?
+              <button
+                disabled
+                className="w-full py-2 rounded-lg text-green-700 bg-green-100 font-medium border border-green-200">
+                ✓ Paid
+              </button>
+            : <button
+                onClick={() => onPay(item)}
+                disabled={isLoading}
+                aria-label={`Pay for appointment with Dr. ${docData.name}`}
+                className="w-full py-2 rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50">
+                {isLoading ? "Processing..." : "Pay Online"}
+              </button>
+            }
+            <button
+              onClick={() => onCancel(_id)}
+              aria-label={`Cancel appointment with Dr. ${docData.name}`}
+              className="w-full py-2 rounded-lg text-red-500 border border-red-200 hover:bg-red-50 transition-colors">
+              Cancel Appointment
+            </button>
+          </>
+        }
+      </div>
+    </article>
+  );
+};
+
+// --- Main Component ---
 
 const MyAppointments = () => {
   const { backendUrl, token, userData, getDoctorsData } =
@@ -11,251 +107,145 @@ const MyAppointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [paymentLoading, setPaymentLoading] = useState(false);
 
-  const getUserAppointments = async () => {
-    try {
-      // Check if token exists before making the API call
-      if (!token) return;
+  // Memoized Headers
+  const apiHeaders = useMemo(
+    () => ({
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+    [token],
+  );
 
-      const { data } = await axios.get(backendUrl + "/api/user/appointments", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+  const getUserAppointments = useCallback(async () => {
+    if (!token) return;
+    try {
+      const { data } = await axios.get(
+        `${backendUrl}/api/user/appointments`,
+        apiHeaders,
+      );
       if (data.success) {
-        // Ensure data.appointments is an array before reversing
         setAppointments(
-          Array.isArray(data.appointments) ? data.appointments.reverse() : [],
+          Array.isArray(data.appointments) ?
+            [...data.appointments].reverse()
+          : [],
         );
       }
     } catch (error) {
-      console.log("Error fetching appointments:", error);
-      // Optionally, handle 401/403 errors more specifically
-      if (error.response && error.response.status === 401) {
-        toast.error("Session expired. Please log in again.");
-      } else {
-        toast.error("Failed to load appointments.");
-      }
-    }
-  };
-
-  const cancelAppointment = async (appointmentId) => {
-    try {
-      if (!token) {
-        toast.error("You must be logged in to cancel an appointment.");
-        return;
-      }
-
-      const { data } = await axios.post(
-        backendUrl + "/api/user/cancel-appointment",
-        { appointmentId },
-        { headers: { Authorization: `Bearer ${token}` } },
+      toast.error(
+        error.response?.status === 401 ?
+          "Session expired. Please log in."
+        : "Failed to load appointments.",
       );
-      if (data.success) {
-        toast.success(data.message);
-        getUserAppointments();
-        getDoctorsData(); // Refresh doctor slots
-      } else {
-        toast.error(data.message);
-      }
-    } catch (error) {
-      console.log("Error cancelling appointment:", error);
-      toast.error("Failed to cancel appointment.");
     }
-  };
+  }, [backendUrl, apiHeaders, token]);
 
-  const loadScript = (src) => {
-    return new Promise((resolve) => {
-      const script = document.createElement("script");
-      script.src = src;
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
-  };
-
-  const openRazorpayCheckout = async (order, appointmentId) => {
-    const isLoaded = await loadScript(
-      "https://checkout.razorpay.com/v1/checkout.js",
-    );
-    if (!isLoaded) {
-      toast.error("Razorpay SDK failed to load. Please try again.");
-      return;
-    }
-
-    const options = {
-      key: order.key_id,
-      amount: order.amount,
-      currency: order.currency,
-      name: "Telecare",
-      description: `Appointment with Dr. ${appointment.docData?.name}`,
-      order_id: order.id,
-      modal: {
-        ondismiss: () => setPaymentLoading(false),
-      },
-      handler: async (response) => {
-        try {
-          const { data } = await axios.post(
-            backendUrl + "/api/user/verify-razorpay",
-            {
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_signature: response.razorpay_signature,
-              appointmentId,
-            },
-            {
-              headers: { Authorization: `Bearer ${token}` },
-            },
-          );
-
-          if (data.success) {
-            toast.success(data.message);
-            getUserAppointments();
-            getDoctorsData();
-          } else {
-            toast.error(data.message || "Payment verification failed");
-          }
-        } catch (error) {
-          console.error("Verify payment failed:", error);
-          toast.error(error.response?.data?.message || error.message);
-        } finally {
-          setPaymentLoading(false);
+  const cancelAppointment = useCallback(
+    async (appointmentId) => {
+      try {
+        const { data } = await axios.post(
+          `${backendUrl}/api/user/cancel-appointment`,
+          { appointmentId },
+          apiHeaders,
+        );
+        if (data.success) {
+          toast.success(data.message);
+          getUserAppointments();
+          getDoctorsData();
+        } else {
+          toast.error(data.message);
         }
-      },
-      prefill: {
-        name: userData?.name || "",
-        email: userData?.email || "",
-      },
-      theme: {
-        color: "#2563eb",
-      },
-    };
+      } catch (error) {
+        toast.error("Failed to cancel appointment.");
+      }
+    },
+    [backendUrl, apiHeaders, getUserAppointments, getDoctorsData],
+  );
 
-    const razorpay = new window.Razorpay(options);
-    razorpay.open();
-  };
-
-  const payPendingAppointment = async (appointment) => {
-    if (!token) {
-      toast.warn("Login to complete payment");
-      return;
-    }
-
-    try {
-      setPaymentLoading(true);
-      const { data } = await axios.post(
-        backendUrl + "/api/user/payment-razorpay",
-        { appointmentId: appointment._id },
-        {
-          headers: { Authorization: `Bearer ${token}` },
+  const initPay = useCallback(
+    async (order, appointmentId) => {
+      const options = {
+        key: order.key_id,
+        amount: order.amount,
+        currency: order.currency,
+        name: "Telecare",
+        description: "Medical Appointment",
+        order_id: order.id,
+        modal: { ondismiss: () => setPaymentLoading(false) },
+        handler: async (response) => {
+          try {
+            const { data } = await axios.post(
+              `${backendUrl}/api/user/verify-razorpay`,
+              { ...response, appointmentId },
+              apiHeaders,
+            );
+            if (data.success) {
+              toast.success("Payment Successful");
+              getUserAppointments();
+              getDoctorsData();
+            }
+          } catch (error) {
+            toast.error("Verification failed");
+          } finally {
+            setPaymentLoading(false);
+          }
         },
-      );
+        prefill: { name: userData?.name, email: userData?.email },
+        theme: { color: "#4f46e5" },
+      };
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    },
+    [backendUrl, apiHeaders, userData, getUserAppointments, getDoctorsData],
+  );
 
-      if (data.success) {
-        await openRazorpayCheckout(data.order, appointment._id);
-      } else {
-        toast.error(data.message || "Unable to create payment order.");
+  const payPendingAppointment = useCallback(
+    async (appointment) => {
+      setPaymentLoading(true);
+      try {
+        const { data } = await axios.post(
+          `${backendUrl}/api/user/payment-razorpay`,
+          { appointmentId: appointment._id },
+          apiHeaders,
+        );
+        if (data.success) {
+          await initPay(data.order, appointment._id);
+        }
+      } catch (error) {
+        toast.error("Unable to initiate payment");
         setPaymentLoading(false);
       }
-    } catch (error) {
-      console.error("Create order failed:", error);
-      toast.error(error.response?.data?.message || error.message);
-      setPaymentLoading(false);
-    }
-  };
+    },
+    [backendUrl, apiHeaders, initPay],
+  );
 
   useEffect(() => {
-    // Trigger appointment fetching whenever the token changes (i.e., user logs in)
     getUserAppointments();
-  }, [token]);
+  }, [getUserAppointments]);
 
   return (
-    <div className="p-4 min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-xl p-6 sm:p-8 mt-10">
-        <h2 className="text-2xl font-semibold text-gray-800 pb-4 border-b border-gray-200">
-          My Appointments
-        </h2>
+    <main className="p-4 min-h-screen bg-gray-50">
+      <div className="max-w-4xl mx-auto bg-white shadow-sm rounded-2xl overflow-hidden mt-6 sm:mt-10">
+        <header className="px-6 py-5 border-b border-gray-100">
+          <h2 className="text-xl font-bold text-gray-800">My Appointments</h2>
+          <p className="text-xs text-gray-500">
+            Manage your upcoming and past medical consultations
+          </p>
+        </header>
 
-        <div className="flex flex-col gap-6 py-6">
+        <div className="flex flex-col gap-4 p-6" aria-live="polite">
           {appointments.length > 0 ?
-            appointments.map((item, index) => (
-              <div
-                className="grid grid-cols-1 md:grid-cols-[120px_1fr_200px] gap-4 p-4 border border-gray-100 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 bg-white"
-                key={index}>
-                {/* Doctor Image */}
-                <div className="hidden md:block">
-                  <img
-                    className="w-full h-28 object-cover rounded-lg bg-indigo-50"
-                    src={
-                      item.docData.image ||
-                      "https://placehold.co/120x120/eef2ff/4338ca?text=Dr"
-                    }
-                    alt={`Dr. ${item.docData.name}`}
-                    onError={(e) => {
-                      e.target.onerror = null;
-                      e.target.src =
-                        "https://placehold.co/120x120/eef2ff/4338ca?text=Dr";
-                    }}
-                  />
-                </div>
-
-                {/* Appointment Details */}
-                <div className="text-sm text-zinc-600 space-y-1">
-                  <p className="text-lg text-indigo-700 font-bold">
-                    {item.docData.name}
-                  </p>
-                  <p className="text-sm font-medium text-gray-700">
-                    {item.docData.speciality}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    <span className="font-semibold">Address:</span>{" "}
-                    {item.docData.address.line1}, {item.docData.address.line2}
-                  </p>
-                  <p className="text-sm mt-2 font-medium text-gray-700">
-                    <span className="text-indigo-600">Date & Time:</span>{" "}
-                    {item.slotDate} at {item.slotTime}
-                  </p>
-                </div>
-
-                {/* Actions/Status */}
-                <div className="flex flex-col gap-2 justify-center pt-2 md:pt-0">
-                  {item.cancelled ?
-                    <button className="w-full py-2 border border-red-500 rounded-full text-red-600 bg-red-50 font-medium cursor-default">
-                      Cancelled
-                    </button>
-                  : <>
-                      {item.payment ?
-                        <button className="w-full py-2 rounded-full text-white bg-green-500 font-medium cursor-default">
-                          Paid
-                        </button>
-                      : <button
-                          onClick={() => payPendingAppointment(item)}
-                          disabled={paymentLoading}
-                          className="w-full py-2 rounded-full text-white bg-indigo-600 hover:bg-indigo-700 transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed">
-                          {paymentLoading ?
-                            "Processing payment..."
-                          : "Pay Online"}
-                        </button>
-                      }
-                      <button
-                        onClick={() => cancelAppointment(item._id)}
-                        className="w-full py-2 rounded-full text-red-500 border border-red-300 bg-white hover:bg-red-50 transition-colors duration-300">
-                        Cancel Appointment
-                      </button>
-                    </>
-                  }
-                </div>
-              </div>
+            appointments.map((item) => (
+              <AppointmentCard
+                key={item._id}
+                item={item}
+                onCancel={cancelAppointment}
+                onPay={payPendingAppointment}
+                isLoading={paymentLoading}
+              />
             ))
-          : <div className="text-center py-16 bg-gray-50 rounded-lg">
-              <p className="text-2xl font-light text-zinc-500">
-                No Appointments Found
-              </p>
-              <p className="text-sm mt-2 text-zinc-400">
-                It looks like you haven't booked any appointments yet.
-              </p>
-            </div>
-          }
+          : <EmptyState />}
         </div>
       </div>
-    </div>
+    </main>
   );
 };
 
