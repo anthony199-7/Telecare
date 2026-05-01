@@ -119,6 +119,22 @@ const AppContextProvider = (props) => {
     }
   }, [doctorToken]);
 
+  useEffect(() => {
+    if (doctorToken) {
+      localStorage.setItem("doctorToken", doctorToken);
+    } else {
+      localStorage.removeItem("doctorToken");
+    }
+  }, [doctorToken]);
+
+  useEffect(() => {
+    if (token) {
+      localStorage.setItem("token", token);
+    } else {
+      localStorage.removeItem("token");
+    }
+  }, [token]);
+
   return (
     <AppContext.Provider value={value}>{props.children}</AppContext.Provider>
   );

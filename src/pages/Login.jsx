@@ -109,7 +109,7 @@ const Login = () => {
         </div>
         <button
           type="submit"
-          className="bg-primary text-white w-full py-2 rounded-md text-base">
+          className="bg-blue-500 text-white w-full py-2 rounded-md text-base">
           {state === "Sign Up" ? "Create Account" : "Login"}
         </button>{" "}
         {/* [13, 14] */}
